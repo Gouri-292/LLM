@@ -1572,25 +1572,30 @@
             }
 
             // Utility functions
-            const showMessage = (msg) => { messageText.textContent = msg; messageBox.classList.remove('hidden'); };
-            const hideMessage = () => { messageBox.classList.add('hidden'); };
+            const showMessage = (msg) => { 
+                if (messageText) messageText.textContent = msg; 
+                if (messageBox) messageBox.classList.remove('hidden'); 
+            };
+            const hideMessage = () => { 
+                if (messageBox) messageBox.classList.add('hidden'); 
+            };
             const goHome = () => {
                 stopAllVideo();
-                homeScreen.classList.remove('hidden');
-                registerScreen.classList.add('hidden');
-                loginScreen.classList.add('hidden');
+                if (homeScreen) homeScreen.classList.remove('hidden');
+                if (registerScreen) registerScreen.classList.add('hidden');
+                if (loginScreen) loginScreen.classList.add('hidden');
             };
 
 
             window.showRegister = () => {
-                homeScreen.classList.add('hidden');
-                registerScreen.classList.remove('hidden');
+                if (homeScreen) homeScreen.classList.add('hidden');
+                if (registerScreen) registerScreen.classList.remove('hidden');
                 startVideo(videoReg, canvasReg, 'register');
             };
 
             window.showLogin = () => {
-                homeScreen.classList.add('hidden');
-                loginScreen.classList.remove('hidden');
+                if (homeScreen) homeScreen.classList.add('hidden');
+                if (loginScreen) loginScreen.classList.remove('hidden');
                 startVideo(videoLogin, canvasLogin, 'login');
             };
 
@@ -1755,9 +1760,13 @@
 
                 // Update UI with username
                 const username = bestMatch.label;
-                document.getElementById('nav-username').textContent = username;
-                document.getElementById('sidebar-username').textContent = username;
-                document.getElementById('sidebar-id').textContent = username + 'ID';
+                const navUsernameEl = document.getElementById('nav-username');
+                const sidebarUsernameEl = document.getElementById('sidebar-username');
+                const sidebarIdEl = document.getElementById('sidebar-id');
+                
+                if (navUsernameEl) navUsernameEl.textContent = username;
+                if (sidebarUsernameEl) sidebarUsernameEl.textContent = username;
+                if (sidebarIdEl) sidebarIdEl.textContent = username + 'ID';
                 
                 // Update dashboard username
                 const dashboardUsername = document.getElementById('dashboard-username');
@@ -1779,8 +1788,8 @@
                     const distance = getDistance(pos.coords.latitude, pos.coords.longitude, CLASSROOM_LOCATION.lat, CLASSROOM_LOCATION.lon);
 
                     // Show dashboard after successful login
-                    authScreens.classList.add('hidden');
-                    dashboardContent.classList.remove('hidden');
+                    if (authScreens) authScreens.classList.add('hidden');
+                    if (dashboardContent) dashboardContent.classList.remove('hidden');
                     
                     // Initialize dashboard
                     initializeDashboard();
@@ -2577,7 +2586,9 @@
 
                 // Sanitize and save (only subject and room are editable)
                 entry.subject = subjectEl.textContent.trim() || 'New Subject';
-                entry.room = roomEl ? roomEl.textContent.trim() : entry.room || '';
+                if (roomEl) {
+                    entry.room = roomEl.textContent.trim() || entry.room || '';
+                }
 
                 // Status and color are auto-calculated based on time; do not set them here
 
@@ -2752,13 +2763,13 @@
             }
 
             // Add event listeners
-            if (changePhotoBtn) {
+            if (changePhotoBtn && profilePhotoInput) {
                 changePhotoBtn.addEventListener('click', () => {
                     profilePhotoInput.click();
                 });
             }
 
-            if (profilePhoto) {
+            if (profilePhoto && profilePhotoInput) {
                 profilePhoto.addEventListener('click', () => {
                     profilePhotoInput.click();
                 });
@@ -2890,22 +2901,41 @@
             if (saveProfileBtn) {
                 saveProfileBtn.addEventListener('click', () => {
                 const profilePhotoEl = document.getElementById('profile-photo');
+                const nameEl = document.getElementById('profile-name');
+                const idEl = document.getElementById('profile-id');
+                const emailEl = document.getElementById('profile-email');
+                const courseEl = document.getElementById('profile-course');
+                const goalsEl = document.getElementById('profile-goals');
+                const sidebarUsernameEl = document.getElementById('sidebar-username');
+                const sidebarIdEl = document.getElementById('sidebar-id');
+                
                 const savedProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
                 
                 const profile = {
-                    name: document.getElementById('profile-name').value,
-                    id: document.getElementById('profile-id').value,
-                    email: document.getElementById('profile-email').value,
-                    course: document.getElementById('profile-course').value,
-                    goals: document.getElementById('profile-goals').value,
+                    name: nameEl ? nameEl.value : '',
+                    id: idEl ? idEl.value : '',
+                    email: emailEl ? emailEl.value : '',
+                    course: courseEl ? courseEl.value : '',
+                    goals: goalsEl ? goalsEl.value : '',
                     photo: profilePhotoEl ? profilePhotoEl.src : null,
                     skills: savedProfile.skills || [] // Preserve skills
                 };
-                localStorage.setItem('userProfile', JSON.stringify(profile));
+                
+                try {
+                    localStorage.setItem('userProfile', JSON.stringify(profile));
+                } catch (e) {
+                    console.error('Error saving profile:', e);
+                    showMessage('Unable to save profile. Your browser storage may be full.');
+                    return;
+                }
                 
                 // Update sidebar if logged in
-                document.getElementById('sidebar-username').textContent = profile.name;
-                document.getElementById('sidebar-id').textContent = profile.id;
+                if (sidebarUsernameEl) {
+                    sidebarUsernameEl.textContent = profile.name;
+                }
+                if (sidebarIdEl) {
+                    sidebarIdEl.textContent = profile.id;
+                }
                 
                 // Update all profile photos
                 if (profile.photo) {
@@ -3401,36 +3431,48 @@
             }
 
             /* ===== UI wiring ===== */
-            addClassBtn.addEventListener('click', () => addClass());
-            resetBtn.addEventListener('click', () => {
-                if (!confirm('Reset all classes and inputs?')) return;
-                classes = [];
-                absentTeachers.clear();
-                addClass({ name: 'Class 1' });
-                addClass({ name: 'Class 2' });
-                renderClasses();
-                renderTimetableInputs();
-                refreshAbsentSelect();
-                renderAbsentList();
-                previewArea.style.display = 'none';
-            });
+            if (addClassBtn) {
+                addClassBtn.addEventListener('click', () => addClass());
+            }
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    if (!confirm('Reset all classes and inputs?')) return;
+                    classes = [];
+                    absentTeachers.clear();
+                    addClass({ name: 'Class 1' });
+                    addClass({ name: 'Class 2' });
+                    renderClasses();
+                    renderTimetableInputs();
+                    refreshAbsentSelect();
+                    renderAbsentList();
+                    previewArea.style.display = 'none';
+                });
+            }
 
-            periodCountInput.addEventListener('change', () => renderTimetableInputs());
+            if (periodCountInput) {
+                periodCountInput.addEventListener('change', () => renderTimetableInputs());
+            }
 
-            addAbsentBtn.addEventListener('click', () => {
-                const t = absentTeacherSelect.value;
-                if (!t) return;
-                absentTeachers.add(t);
-                renderAbsentList();
-            });
+            if (addAbsentBtn && absentTeacherSelect) {
+                addAbsentBtn.addEventListener('click', () => {
+                    const t = absentTeacherSelect.value;
+                    if (!t) return;
+                    absentTeachers.add(t);
+                    renderAbsentList();
+                });
+            }
 
-            previewBtn.addEventListener('click', () => renderPreview());
+            if (previewBtn) {
+                previewBtn.addEventListener('click', () => renderPreview());
+            }
 
-            regenBtn.addEventListener('click', () => {
-                if (classes.length === 0) { alert('Add at least one class.'); return; }
-                const model = regenerateScheduleModel();
-                showResult(model);
-            });
+            if (regenBtn) {
+                regenBtn.addEventListener('click', () => {
+                    if (classes.length === 0) { alert('Add at least one class.'); return; }
+                    const model = regenerateScheduleModel();
+                    showResult(model);
+                });
+            }
 
             // seed data
             addClass({
@@ -3530,23 +3572,37 @@
             const messageBox = document.getElementById('message-box');
             const messageText = document.getElementById('message-text');
 
-            const showMessage = (msg) => { messageText.textContent = msg; messageBox.classList.remove('hidden'); };
-            const hideMessage = () => { messageBox.classList.add('hidden'); };
+            const showMessage = (msg) => { 
+                if (messageText) messageText.textContent = msg; 
+                if (messageBox) messageBox.classList.remove('hidden'); 
+            };
+            const hideMessage = () => { 
+                if (messageBox) messageBox.classList.add('hidden'); 
+            };
 
             // Start Attendance Session
-            document.getElementById('start-attendance-btn').addEventListener('click', () => {
-                showMessage('Attendance session started! Students can now mark attendance.');
-            });
+            const startAttendanceBtn = document.getElementById('start-attendance-btn');
+            if (startAttendanceBtn) {
+                startAttendanceBtn.addEventListener('click', () => {
+                    showMessage('Attendance session started! Students can now mark attendance.');
+                });
+            }
 
             // Load Timetable
-            document.getElementById('load-timetable-btn').addEventListener('click', () => {
-                showMessage('Timetable loaded successfully.');
-            });
+            const loadTimetableBtn = document.getElementById('load-timetable-btn');
+            if (loadTimetableBtn) {
+                loadTimetableBtn.addEventListener('click', () => {
+                    showMessage('Timetable loaded successfully.');
+                });
+            }
 
             // Open Rescheduler
-            document.getElementById('open-rescheduler-btn').addEventListener('click', () => {
-                showMessage('Rescheduler opened. Manage absent teachers and regenerate schedules.');
-            });
+            const openReschedulerBtn = document.getElementById('open-rescheduler-btn');
+            if (openReschedulerBtn) {
+                openReschedulerBtn.addEventListener('click', () => {
+                    showMessage('Rescheduler opened. Manage absent teachers and regenerate schedules.');
+                });
+            }
         }
 
         // Admin Dashboard Initialization
@@ -3554,8 +3610,13 @@
             const messageBox = document.getElementById('message-box');
             const messageText = document.getElementById('message-text');
 
-            const showMessage = (msg) => { messageText.textContent = msg; messageBox.classList.remove('hidden'); };
-            const hideMessage = () => { messageBox.classList.add('hidden'); };
+            const showMessage = (msg) => { 
+                if (messageText) messageText.textContent = msg; 
+                if (messageBox) messageBox.classList.remove('hidden'); 
+            };
+            const hideMessage = () => { 
+                if (messageBox) messageBox.classList.add('hidden'); 
+            };
 
             // Load data from localStorage
             function loadUsers() {
